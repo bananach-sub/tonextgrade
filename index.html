@@ -2,120 +2,158 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>卒業カウントダウン</title>
+<title>countdown to 5th grade</title>
+
 <style>
 body {
-  font-family: sans-serif;
-  text-align: center;
-  background: #111;
+  margin: 0;
+  background: black;
   color: white;
-}
-
-#timer {
-  font-size: 40px;
-  margin: 20px;
-}
-
-/* コメント流れるエリア */
-#commentArea {
-  position: relative;
-  width: 100%;
-  height: 200px;
+  font-family: sans-serif;
   overflow: hidden;
-  border: 2px solid white;
 }
 
-/* コメント本体 */
+/* タイマー */
+#timer {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 30px;
+  z-index: 100;
+}
+
+/* コメントエリア（全画面） */
+#commentArea {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* コメント */
 .comment {
   position: absolute;
   white-space: nowrap;
-  animation: move 8s linear forwards;
+  animation: move linear forwards;
 }
 
-/* 横移動アニメ */
+/* 流れる */
 @keyframes move {
   from { left: 100%; }
   to { left: -100%; }
+}
+
+/* 入力UI */
+#ui {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
 }
 </style>
 </head>
 
 <body>
 
-<h1>5年生までカウントダウン</h1>
 <div id="timer"></div>
-
 <div id="commentArea"></div>
 
-<br>
+<div id="ui">
+  <input id="text">
+  
+  <select id="color">
+    <option value="red">赤</option>
+    <option value="orange">オレンジ</option>
+    <option value="yellow">黄</option>
+    <option value="green">緑</option>
+    <option value="blue">青</option>
+    <option value="indigo">藍</option>
+    <option value="violet">紫</option>
+  </select>
 
-<input id="text" placeholder="コメント">
-<select id="color">
-  <option value="red">赤</option>
-  <option value="orange">オレンジ</option>
-  <option value="yellow">黄</option>
-  <option value="green">緑</option>
-  <option value="blue">青</option>
-  <option value="indigo">藍</option>
-  <option value="violet">紫</option>
-</select>
+  <select id="size">
+    <option value="40px">デカい</option>
+    <option value="25px">普通</option>
+    <option value="15px">小さい</option>
+  </select>
 
-<select id="size">
-  <option value="30px">デカい</option>
-  <option value="20px">普通</option>
-  <option value="14px">小さい</option>
-</select>
+  <select id="position">
+    <option value="top">上</option>
+    <option value="middle">真ん中</option>
+    <option value="bottom">下</option>
+  </select>
 
-<select id="position">
-  <option value="20%">上</option>
-  <option value="50%">真ん中</option>
-  <option value="80%">下</option>
-</select>
-
-<button onclick="sendComment()">送信</button>
+  <button onclick="sendComment()">送信</button>
+</div>
 
 <script>
-// カウントダウン
-const target = new Date("2027-04-01"); // ←ここ変えてOK
+// ===== カウントダウン =====
+const target = new Date("2026-03-20T00:00:00");
 
 function updateTimer() {
   const now = new Date();
   const diff = target - now;
 
-  const days = Math.floor(diff / (1000*60*60*24));
-  const hours = Math.floor(diff / (1000*60*60)) % 24;
-  const minutes = Math.floor(diff / (1000*60)) % 60;
-  const seconds = Math.floor(diff / 1000) % 60;
+  const d = Math.floor(diff / (1000*60*60*24));
+  const h = Math.floor(diff / (1000*60*60)) % 24;
+  const m = Math.floor(diff / (1000*60)) % 60;
+  const s = Math.floor(diff / 1000) % 60;
 
   document.getElementById("timer").innerText =
-    `${days}日 ${hours}時間 ${minutes}分 ${seconds}秒`;
+    `${d}日 ${h}時間 ${m}分 ${s}秒`;
 }
-
 setInterval(updateTimer, 1000);
 updateTimer();
 
-// コメント送信
-function sendComment() {
-  const text = document.getElementById("text").value;
-  const color = document.getElementById("color").value;
-  const size = document.getElementById("size").value;
-  const pos = document.getElementById("position").value;
+// ===== WebSocket =====
+const ws = new WebSocket("ws://localhost:3000");
 
-  if (!text) return;
+ws.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  createComment(data);
+};
 
+// ===== コメント生成 =====
+function createComment(data) {
   const el = document.createElement("div");
   el.className = "comment";
-  el.innerText = text;
+  el.innerText = data.text;
 
-  el.style.color = color;
-  el.style.fontSize = size;
-  el.style.top = pos;
+  el.style.color = data.color;
+  el.style.fontSize = data.size;
+
+  // 位置
+  if (data.position === "top") {
+    el.style.top = "0px";
+  } else if (data.position === "bottom") {
+    el.style.bottom = "0px";
+  } else {
+    el.style.top = Math.random() * window.innerHeight + "px";
+  }
+
+  // 速度（ランダム）
+  const duration = 5 + Math.random() * 5;
+  el.style.animationDuration = duration + "s";
 
   document.getElementById("commentArea").appendChild(el);
 
-  // 8秒後に削除（軽量化）
-  setTimeout(() => el.remove(), 8000);
+  setTimeout(() => el.remove(), duration * 1000);
+}
 
+// ===== 送信 =====
+function sendComment() {
+  const data = {
+    text: document.getElementById("text").value,
+    color: document.getElementById("color").value,
+    size: document.getElementById("size").value,
+    position: document.getElementById("position").value
+  };
+
+  ws.send(JSON.stringify(data));
   document.getElementById("text").value = "";
 }
 </script>
