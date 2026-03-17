@@ -87,13 +87,15 @@ body {
     <option value="bottom">下</option>
   </select>
 
-  <button onclick="sendComment()">送信</button>
+  <script>
+    document.getElementById("sendBtn").onclick = sendComment;
+  </script>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <script>
-const supabase = supabase.createClient(
+const client = supabase.createClient(
   "https://ukjqldnwrncysmtczwpe.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVranFsZG53cm5jeXNtdGN6d3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzUyMjUsImV4cCI6MjA4OTMxMTIyNX0.16mStjH0sKVqYVYKpbOBqh24XjhFtJ_0Q3rP7ZNyNq4"
 );
