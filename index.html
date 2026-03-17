@@ -2,128 +2,122 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>countdown to 5th grade</title>
-
+<title>卒業カウントダウン</title>
 <style>
 body {
-  margin: 0;
-  background: black;
-  color: white;
   font-family: sans-serif;
-  overflow: hidden;
+  text-align: center;
+  background: #111;
+  color: white;
 }
 
-/* タイマー */
 #timer {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 30px;
-  z-index: 100;
+  font-size: 40px;
+  margin: 20px;
 }
 
-/* コメントエリア（全画面） */
+/* コメント流れるエリア */
 #commentArea {
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
-  pointer-events: none;
+  height: 200px;
+  overflow: hidden;
+  border: 2px solid white;
 }
 
-/* コメント */
+/* コメント本体 */
 .comment {
   position: absolute;
   white-space: nowrap;
-  animation: move linear forwards;
+  animation: move 8s linear forwards;
 }
 
-/* 流れる */
+/* 横移動アニメ */
 @keyframes move {
   from { left: 100%; }
   to { left: -100%; }
-}
-
-/* 入力UI */
-#ui {
-  position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
 }
 </style>
 </head>
 
 <body>
 
+<h1>5年生までカウントダウン</h1>
 <div id="timer"></div>
+
 <div id="commentArea"></div>
 
-<div id="ui">
-  <input id="text">
-  
-  <select id="color">
-    <option value="red">赤</option>
-    <option value="orange">オレンジ</option>
-    <option value="yellow">黄</option>
-    <option value="green">緑</option>
-    <option value="blue">青</option>
-    <option value="indigo">藍</option>
-    <option value="violet">紫</option>
-  </select>
+<br>
 
-  <select id="size">
-    <option value="40px">デカい</option>
-    <option value="25px">普通</option>
-    <option value="15px">小さい</option>
-  </select>
+<input id="text" placeholder="コメント">
+<select id="color">
+  <option value="red">赤</option>
+  <option value="orange">オレンジ</option>
+  <option value="yellow">黄</option>
+  <option value="green">緑</option>
+  <option value="blue">青</option>
+  <option value="indigo">藍</option>
+  <option value="violet">紫</option>
+</select>
 
-  <select id="position">
-    <option value="top">上</option>
-    <option value="middle">真ん中</option>
-    <option value="bottom">下</option>
-  </select>
+<select id="size">
+  <option value="30px">デカい</option>
+  <option value="20px">普通</option>
+  <option value="14px">小さい</option>
+</select>
 
-  <script>
-    document.getElementById("sendBtn").onclick = sendComment;
-  </script>
-</div>
+<select id="position">
+  <option value="20%">上</option>
+  <option value="50%">真ん中</option>
+  <option value="80%">下</option>
+</select>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<button onclick="sendComment()">送信</button>
 
 <script>
-const client = supabase.createClient(
-  "https://ukjqldnwrncysmtczwpe.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVranFsZG53cm5jeXNtdGN6d3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzUyMjUsImV4cCI6MjA4OTMxMTIyNX0.16mStjH0sKVqYVYKpbOBqh24XjhFtJ_0Q3rP7ZNyNq4"
-);
+// カウントダウン
+const target = new Date("2026-03-20T00:00:00");
 
-// ===== コメント送信 =====
-async function sendComment() {
-  const data = {
-    text: text.value,
-    color: color.value,
-    size: size.value,
-    position: position.value
-  };
+function updateTimer() {
+  const now = new Date();
+  const diff = target - now;
 
-  await supabase.from("comments").insert([data]);
-  text.value = "";
+  const d = Math.floor(diff / (1000*60*60*24));
+  const h = Math.floor(diff / (1000*60*60)) % 24;
+  const m = Math.floor(diff / (1000*60)) % 60;
+  const s = Math.floor(diff / 1000) % 60;
+
+  document.getElementById("timer").innerText =
+    `5年生まであと${d}日 ${h}時間 ${m}分 ${s}秒`;
 }
 
-// ===== リアルタイム受信 =====
-supabase
-  .channel("comments")
-  .on(
-    "postgres_changes",
-    { event: "INSERT", schema: "public", table: "comments" },
-    (payload) => {
-      createComment(payload.new);
-    }
-  )
-  .subscribe();
+setInterval(updateTimer, 1000);
+updateTimer();
+
+// コメント送信
+function sendComment() {
+  const text = document.getElementById("text").value;
+  const color = document.getElementById("color").value;
+  const size = document.getElementById("size").value;
+  const pos = document.getElementById("position").value;
+
+  if (!text) return;
+
+  const el = document.createElement("div");
+  el.className = "comment";
+  el.innerText = text;
+
+  el.style.color = color;
+  el.style.fontSize = size;
+  el.style.top = pos;
+
+  document.getElementById("commentArea").appendChild(el);
+
+  // 8秒後に削除（軽量化）
+  setTimeout(() => el.remove(), 8000);
+
+  document.getElementById("text").value = "";
+}
 </script>
 
 </body>
