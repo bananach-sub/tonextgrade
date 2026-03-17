@@ -90,72 +90,38 @@ body {
   <button onclick="sendComment()">送信</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 <script>
-// ===== カウントダウン =====
-const target = new Date("2026-03-20T00:00:00");
+const supabase = supabase.createClient(
+  "https://ukjqldnwrncysmtczwpe.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVranFsZG53cm5jeXNtdGN6d3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MzUyMjUsImV4cCI6MjA4OTMxMTIyNX0.16mStjH0sKVqYVYKpbOBqh24XjhFtJ_0Q3rP7ZNyNq4"
+);
 
-function updateTimer() {
-  const now = new Date();
-  const diff = target - now;
-
-  const d = Math.floor(diff / (1000*60*60*24));
-  const h = Math.floor(diff / (1000*60*60)) % 24;
-  const m = Math.floor(diff / (1000*60)) % 60;
-  const s = Math.floor(diff / 1000) % 60;
-
-  document.getElementById("timer").innerText =
-    `${d}日 ${h}時間 ${m}分 ${s}秒`;
-}
-setInterval(updateTimer, 1000);
-updateTimer();
-
-// ===== WebSocket =====
-const ws = new WebSocket("ws://localhost:3000");
-
-ws.onmessage = (e) => {
-  const data = JSON.parse(e.data);
-  createComment(data);
-};
-
-// ===== コメント生成 =====
-function createComment(data) {
-  const el = document.createElement("div");
-  el.className = "comment";
-  el.innerText = data.text;
-
-  el.style.color = data.color;
-  el.style.fontSize = data.size;
-
-  // 位置
-  if (data.position === "top") {
-    el.style.top = "0px";
-  } else if (data.position === "bottom") {
-    el.style.bottom = "0px";
-  } else {
-    el.style.top = Math.random() * window.innerHeight + "px";
-  }
-
-  // 速度（ランダム）
-  const duration = 5 + Math.random() * 5;
-  el.style.animationDuration = duration + "s";
-
-  document.getElementById("commentArea").appendChild(el);
-
-  setTimeout(() => el.remove(), duration * 1000);
-}
-
-// ===== 送信 =====
-function sendComment() {
+// ===== コメント送信 =====
+async function sendComment() {
   const data = {
-    text: document.getElementById("text").value,
-    color: document.getElementById("color").value,
-    size: document.getElementById("size").value,
-    position: document.getElementById("position").value
+    text: text.value,
+    color: color.value,
+    size: size.value,
+    position: position.value
   };
 
-  ws.send(JSON.stringify(data));
-  document.getElementById("text").value = "";
+  await supabase.from("comments").insert([data]);
+  text.value = "";
 }
+
+// ===== リアルタイム受信 =====
+supabase
+  .channel("comments")
+  .on(
+    "postgres_changes",
+    { event: "INSERT", schema: "public", table: "comments" },
+    (payload) => {
+      createComment(payload.new);
+    }
+  )
+  .subscribe();
 </script>
 
 </body>
