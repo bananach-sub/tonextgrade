@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>卒業カウントダウン</title>
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+  background: #111;
+  color: white;
+}
+
+#timer {
+  font-size: 40px;
+  margin: 20px;
+}
+
+/* コメント流れるエリア */
+#commentArea {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border: 2px solid white;
+}
+
+/* コメント本体 */
+.comment {
+  position: absolute;
+  white-space: nowrap;
+  animation: move 8s linear forwards;
+}
+
+/* 横移動アニメ */
+@keyframes move {
+  from { left: 100%; }
+  to { left: -100%; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>5年生までカウントダウン</h1>
+<div id="timer"></div>
+
+<div id="commentArea"></div>
+
+<br>
+
+<input id="text" placeholder="コメント">
+<select id="color">
+  <option value="red">赤</option>
+  <option value="orange">オレンジ</option>
+  <option value="yellow">黄</option>
+  <option value="green">緑</option>
+  <option value="blue">青</option>
+  <option value="indigo">藍</option>
+  <option value="violet">紫</option>
+</select>
+
+<select id="size">
+  <option value="30px">デカい</option>
+  <option value="20px">普通</option>
+  <option value="14px">小さい</option>
+</select>
+
+<select id="position">
+  <option value="20%">上</option>
+  <option value="50%">真ん中</option>
+  <option value="80%">下</option>
+</select>
+
+<button onclick="sendComment()">送信</button>
+
+<script>
+// カウントダウン
+const target = new Date("2027-04-01"); // ←ここ変えてOK
+
+function updateTimer() {
+  const now = new Date();
+  const diff = target - now;
+
+  const days = Math.floor(diff / (1000*60*60*24));
+  const hours = Math.floor(diff / (1000*60*60)) % 24;
+  const minutes = Math.floor(diff / (1000*60)) % 60;
+  const seconds = Math.floor(diff / 1000) % 60;
+
+  document.getElementById("timer").innerText =
+    `${days}日 ${hours}時間 ${minutes}分 ${seconds}秒`;
+}
+
+setInterval(updateTimer, 1000);
+updateTimer();
+
+// コメント送信
+function sendComment() {
+  const text = document.getElementById("text").value;
+  const color = document.getElementById("color").value;
+  const size = document.getElementById("size").value;
+  const pos = document.getElementById("position").value;
+
+  if (!text) return;
+
+  const el = document.createElement("div");
+  el.className = "comment";
+  el.innerText = text;
+
+  el.style.color = color;
+  el.style.fontSize = size;
+  el.style.top = pos;
+
+  document.getElementById("commentArea").appendChild(el);
+
+  // 8秒後に削除（軽量化）
+  setTimeout(() => el.remove(), 8000);
+
+  document.getElementById("text").value = "";
+}
+</script>
+
+</body>
+</html>
